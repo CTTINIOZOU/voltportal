@@ -1,15 +1,9 @@
 {% extends "base.html" %}
 {% block content %}
-  <div class="alert alert-success">
-    <h5 class="mb-1">Submission received</h5>
-    <p class="mb-0">Thank you. Your VASP onboarding package has been saved.</p>
-  </div>
-
-  {% if sid %}
-    <p class="mt-3">
-      Submission ID: <code>{{ sid }}</code>
-    </p>
-  {% endif %}
-
-  <a class="btn btn-outline-primary mt-2" href="{{ url_for('start') }}">Start a new submission</a>
+<div class="alert alert-success">
+  <h5 class="mb-1">Submission received</h5>
+  <p class="mb-0">Thank you. Your VASP onboarding package has been saved.</p>
+</div>
+{% if sid %}<p class="mt-3">Submission ID: <code>{{ sid }}</code></p>{% endif %}
+<a class="btn btn-outline-primary mt-2" href="{{ url_for('start') }}">Start a new submission</a>
 {% endblock %}

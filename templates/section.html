@@ -7,26 +7,55 @@
   <input type="hidden" name="sid" value="{{ sid }}"/>
 
   {% for f in section.fields %}
-    <div class="mb-3">
+    <div class="field-block">
       <label class="form-label"><strong>{{ f.label }}</strong></label>
 
       {% set key = f.mapping_ref %}
-      {% set wt = attribute(form, key.replace('.', '_')) %}
+      {% set wt = field_widgets.get(key) %}
 
       {% if wt %}
         {{ wt(class="form-control") }}
       {% else %}
         {% if f.type == 'multicheck' %}
           {% for opt in f.options %}
-            <div class="form-check">
+            <div class="form-check option-line">
               <input class="form-check-input" type="checkbox" name="{{ key }}" id="{{ key }}_{{ loop.index }}" value="{{ opt.value }}">
               <label class="form-check-label" for="{{ key }}_{{ loop.index }}">{{ opt.label }}</label>
             </div>
           {% endfor %}
+        {% elif f.type == 'list' %}
+          <div id="{{ key }}_list_wrap">
+            <input class="form-control mb-2" name="{{ key }}" placeholder="{{ f.placeholder or '' }}">
+          </div>
+          <button type="button" class="btn btn-sm btn-outline-secondary" onclick="addListItem('{{ key }}_list_wrap','{{ key }}','{{ f.placeholder or '' }}')">+ Add</button>
         {% elif f.type == 'file' %}
-          <input type="file" name="{{ key }}" class="form-control">
+          {% if f.multiple %}
+            <input type="file" name="{{ key }}" multiple class="form-control">
+          {% else %}
+            <input type="file" name="{{ key }}" class="form-control">
+          {% endif %}
         {% elif f.type == 'date' %}
           <input type="date" name="{{ key }}" class="form-control">
+        {% elif f.type == 'table' %}
+          <div class="table-responsive">
+            <table class="table table-bordered align-middle">
+              <thead>
+                <tr>
+                  {% for col in f.columns %}<th>{{ col.label }}</th>{% endfor %}
+                </tr>
+              </thead>
+              <tbody>
+                {% for i in range(f.rows) %}
+                  <tr>
+                    {% for col in f.columns %}
+                      {% set ckey = key ~ '__' ~ i ~ '__' ~ col.key %}
+                      <td><input class="form-control" name="{{ ckey }}"></td>
+                    {% endfor %}
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
         {% else %}
           <input class="form-control" name="{{ key }}">
         {% endif %}
@@ -45,4 +74,15 @@
     {% endif %}
   </div>
 </form>
+
+<script>
+function addListItem(wrapperId, name, placeholder) {
+  const wrap = document.getElementById(wrapperId);
+  const input = document.createElement('input');
+  input.className = 'form-control mb-2';
+  input.setAttribute('name', name);
+  if (placeholder) input.setAttribute('placeholder', placeholder);
+  wrap.appendChild(input);
+}
+</script>
 {% endblock %}

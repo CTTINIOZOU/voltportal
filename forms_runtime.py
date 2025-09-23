@@ -19,5 +19,7 @@ def wtfield_for(field_def):
         choices = [(opt["value"], opt["label"]) for opt in field_def["options"]]
         return SelectField(field_def["label"], validators=validators, choices=choices)
     if ftype in ("multicheck", "list", "file", "date", "table"):
+        # custom-rendered in template
         return None
+    # default fallback
     return StringField(field_def["label"], validators=validators)

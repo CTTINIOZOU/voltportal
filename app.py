@@ -28,7 +28,7 @@ def create_app():
     app.config["MAX_CONTENT_LENGTH"] = 64 * 1024 * 1024
     db.init_app(app)
 
-        # Create tables at startup (Flask 3 removed before_first_request)
+    # Create tables at startup (Flask 3)
     with app.app_context():
         db.create_all()
 
@@ -46,8 +46,11 @@ def create_app():
     def load_or_create_submission():
         sid = request.args.get("sid") or request.form.get("sid")
         if sid:
-            s = Submission.query.get(int(sid))
-            if s: return s
+            try:
+                s = Submission.query.get(int(sid))
+                if s: return s
+            except Exception:
+                pass
         s = Submission()
         db.session.add(s); db.session.commit()
         return s
@@ -68,6 +71,13 @@ def create_app():
         sub = load_or_create_submission()
         form = FormClass()
 
+        # Pre-fill simple fields from answers
+        for f in section["fields"]:
+            key = f["mapping_ref"]
+            val = sub.answers.get(key)
+            if wtfield_for(f) is not None and val is not None:
+                getattr(form, key.replace(".", "_")).data = val
+
         if request.method == "POST":
             for f in section["fields"]:
                 key = f["mapping_ref"]
@@ -77,17 +87,15 @@ def create_app():
                     if wtfield_for(f) is not None:
                         sub.answers[key] = getattr(form, key.replace(".", "_")).data
                 elif ftype == "file":
-                    files_saved = []
-                    uploaded = [request.files.get(key)]
-                    for file in uploaded:
-                        if file and file.filename:
-                            from uuid import uuid4
-                            fname = secure_filename(file.filename)
-                            u = f"{uuid4().hex}_{fname}"
-                            file.save(os.path.join(UPLOAD_DIR, u))
-                            files_saved.append(u)
-                    if files_saved:
-                        sub.files[key] = files_saved[0]
+                    uploaded = request.files.get(key)
+                    if uploaded and uploaded.filename:
+                        fname = secure_filename(uploaded.filename)
+                        u = f"{uuid4().hex}_{fname}"
+                        uploaded.save(os.path.join(UPLOAD_DIR, u))
+                        sub.files[key] = u
+                elif ftype == "multicheck":
+                    selected = request.form.getlist(key)
+                    sub.answers[key] = selected
 
             if "submit_back" in request.form:
                 prev_idx = max(0, idx - 1); sub.current_section_index = prev_idx

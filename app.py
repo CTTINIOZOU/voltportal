@@ -28,8 +28,8 @@ def create_app():
     app.config["MAX_CONTENT_LENGTH"] = 64 * 1024 * 1024
     db.init_app(app)
 
-    @app.before_first_request
-    def init_db():
+        # Create tables at startup (Flask 3 removed before_first_request)
+    with app.app_context():
         db.create_all()
 
     def build_form_class(section):
